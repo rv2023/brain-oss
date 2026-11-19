@@ -1,0 +1,8 @@
+user
+TASK: Round 2 review of example-org/app PR #12 (branch fix/fix-006-export-copy; review the commits since the previous review and confirm each finding from logs/rv1-example-org_app__12.log is fixed).
+codex
+
+tokens used
+38,900
+[P1] src/export.py:130 — Retention is applied to new rows only; rows already in the export queue still skip it — apply it when the export is built.
+exit=0

@@ -1,0 +1,26 @@
+- id: STORY-104
+  title: Home page
+  kind: story
+  stage: '1'
+  why: Home is the first page a new user opens.
+  depends_on:
+  - STORY-102
+  - STORY-103
+  decisions:
+  - O4
+  - DEC-20250110-28
+  - DEC-20250115-TEAMS
+  source: plans/backlog.md
+  closes_hops:
+  - hop:signup:J1:02
+- id: STORY-106
+  title: Costs page
+  kind: story
+  stage: '1'
+  why: Shows what each project costs this month; the billing source finishes it in stage 2.
+  finishes_in: '2'
+  depends_on:
+  - STORY-102
+  decisions:
+  - O20
+  source: plans/backlog.md

@@ -1,0 +1,339 @@
+# The Brain's layers and ID codes. The source of truth for what kinds of dots exist.
+# Add a layer or a custom code here; no code change. The check script (`python3 check.py layers|records|brief|fix`)
+# refuses IDs that match no code or legacy code, duplicate prefixes, links not listed under `links`, and a missing `privacy`.
+#
+# Fields per layer:
+#   codes:    ID prefixes (regex for the full ID); one or more
+#   links:    allowed link types from this layer: "<link name>: <target layers>"
+#   importer: what feeds it (script name), or "manual" for hand-written records
+#   privacy:  open (agents and owner) | owner | claude-only | consent (customer data)
+#   custom:   true for layers added by the owner or a customer (not built in)
+version: 2
+# Changelog
+#   1: first layers, codes, links and privacy levels.
+#   2: legacy_codes (old ID shapes that stay valid), record_kinds, stores, privacy paths, project_rules,
+#      importer_owned_paths, brief_check and decision one_of added for check.py; links delivers (code -> plan) and
+#      closes (plan -> audits) used by the local importers.
+
+layers:
+  product:
+    codes: {FEAT: '^FEAT-\d{3,}$', J: '^J-\d{2,}$', JS: '^JS-\d{2,}\.\d{2,}$'}
+    links: ["delivered_by: plan", "touches: code, contracts, design"]
+    importer: product_graph
+    privacy: open
+  plan:
+    codes: {GOAL: '^GOAL-\d+$', PH: '^PH-\d+$', W: '^W-\d+$', STORY: '^STORY-\d{3,}(-[A-Z0-9]+)?$', FIX: '^FIX-\d{3,}$', RM: '^RM-\d+\.\d+$'}
+    links: ["depends_on: plan", "decided_by: decisions", "designed_in: design", "built_in: code", "checked_by: audits, tests", "part_of: plan", "closes: audits"]   # closes: stage-map closes_hops
+    importer: stage_map
+    privacy: open
+  decisions:
+    codes: {DEC: '^DEC-\d{4}$', BDEC: '^BDEC-\d{4}$', PDEC: '^PDEC-\d{4}$'}   # one prefix per store: project DEC, Brain's own BDEC, private store PDEC (claude-only)
+    links: ["affects: any", "replaces: decisions", "cites: research"]
+    importer: records
+    privacy: open
+  lessons:
+    codes: {L: '^L-\d{4}$', BL: '^BL-\d{4}$', FB: '^FB-\d{3}$'}   # L project, BL the Brain's own
+    links: ["taught_by: audits, reviews, operations, decisions", "applies_to: any", "enforced_by: tests, code"]
+    importer: records
+    privacy: open
+  research:
+    codes: {R: '^R-\d{4}$', EXP: '^EXP-\d{3}$'}
+    links: ["informs: decisions, plan"]
+    importer: research_notes
+    privacy: owner
+  code:
+    codes: {repo: '^repo:[\w.-]+$', pkg: '^pkg:[\w./-]+$', file: '^file:[\w./-]+$', fn: '^fn:[\w./-]+\.[\w]+$'}
+    links: ["calls: code", "imports: code", "reads: settings, data", "writes: data", "implements: contracts", "delivers: plan"]   # delivers: a PR -> the story it builds
+    importer: language_parsers   # BDEC-0001: Go go/packages, Python ast, tree-sitter
+    privacy: open
+  contracts:
+    codes: {API: '^API-[\w.-]+$', EVT: '^EVT-[\w.-]+$', CV: '^contracts@v\d+\.\d+\.\d+$'}
+    links: ["served_by: code", "consumed_by: code", "released_in: contracts"]
+    importer: contracts_repo
+    privacy: open
+  data:
+    codes: {TBL: '^TBL-[\w.]+$', MIG: '^MIG-[\w-]+-\d{3}$'}
+    links: ["created_by: data", "owned_by: code"]
+    importer: migrations
+    privacy: open
+  settings:
+    codes: {SET: '^SET-[a-z0-9_]+$'}
+    links: ["value_from: decisions", "read_by: code"]
+    importer: records
+    privacy: open
+  infrastructure:
+    codes: {INF: '^INF-[\w-]+$', SVC: '^SVC-[\w-]+$'}
+    links: ["runs: code", "defined_in: code"]
+    importer: terraform_gitops
+    privacy: owner
+  releases:
+    codes: {REL: '^REL-[\w.-]+$', ENV: '^ENV-[\w-]+$'}
+    links: ["contains: code, plan", "deployed_to: releases"]
+    importer: tags_gitops
+    privacy: open
+  design:
+    codes: {FIG: '^FIG-\d+:\d+$', CMP: '^CMP-[\w-]+$'}
+    links: ["shows: plan, product", "built_as: code"]
+    importer: figma_readonly
+    privacy: open
+  architecture:
+    codes: {ARCH: '^ARCH-[\w-]+$'}
+    links: ["represents: code, infrastructure, contracts"]
+    importer: drawio
+    privacy: open
+  audits:
+    codes: {HOP: '^HOP-[\w.-]+$', V: '^V-\d+$', FND: '^FND-\d{4}$', CU: '^CU-[\w-]+$'}
+    links: ["about: contracts, code, product", "fixed_by: code", "story: plan"]
+    importer: hop_tool
+    privacy: open
+  reviews:
+    codes: {RV: '^RV-[\w-]+-\d+-r\d+$'}
+    links: ["reviews: code", "found: audits", "outcome: audits"]
+    importer: review_logs
+    privacy: open
+  tests:
+    codes: {T: '^T-[\w./-]+$'}
+    links: ["covers: code, contracts, audits"]
+    importer: language_parsers
+    privacy: open
+  security:
+    codes: {PERM: '^PERM-[\w-]+$', THR: '^THR-[\w-]+$', SEC: '^SEC-[\w-]+$'}   # secret NAMES only, never values
+    links: ["threatens: code, contracts, infrastructure", "mitigated_by: code, tests"]
+    importer: records
+    privacy: owner
+  money:
+    codes: {PRICE: '^PRICE-[\w-]+$', FLOW: '^FLOW-[\w-]+$'}
+    links: ["set_by: decisions", "implemented_in: code", "shown_in: design"]
+    importer: records
+    privacy: owner
+  operations:
+    codes: {ALR: '^ALR-[\w-]+$', SLO: '^SLO-[\w-]+$', I: '^I-\d{4}$', RB: '^RB-[\w-]+$'}
+    links: ["watches: code, infrastructure", "led_to: lessons"]
+    importer: records
+    privacy: owner
+  agents:
+    codes: {AG: '^AG-[\w-]+$', RUN: '^RUN-[\w-]+$', BD: '^BD-[\w-]+$'}
+    links: ["worked_on: plan", "produced: code", "asked: decisions"]
+    importer: agents_api   # live from the agent runner
+    privacy: open
+  external:
+    codes: {EXT: '^EXT-[\w-]+$'}   # outside systems and vendors: EXT-github, EXT-stripe, EXT-slack
+    links: ["called_by: code, agents", "terms: docs", "pinned_version: releases", "owned_by: people"]
+    importer: records
+    privacy: owner
+  people:
+    codes: {P: '^P-[\w-]+$', ROLE: '^ROLE-(owner|approver|developer|viewer)$'}
+    links: ["decided: decisions", "approved: agents"]
+    importer: records
+    privacy: owner
+  docs:
+    codes: {DOC: '^DOC-[\w.-]+#[\w-]+$'}
+    links: ["describes: any"]
+    importer: docs
+    privacy: open
+  customers:
+    codes: {CUST: '^CUST-[\w-]+$'}
+    links: ["owns: any"]
+    importer: customer_accounts
+    privacy: consent
+  private:
+    codes: {PRIV: '^PRIV-[\w.-]+$'}   # private notes that only some agents may read (see privacy)
+    links: ["any: any"]
+    importer: manual
+    privacy: claude-only
+
+# Custom layers: owner or customer additions go below, with custom: true.
+# Example (commented out):
+# custom_layers:
+#   legal:
+#     codes: {LEG: '^LEG-\d{3}$'}
+#     links: ["affects: plan, product"]
+#     importer: manual
+#     privacy: owner
+#     custom: true
+custom_layers: {}
+
+# Link direction: every link type reads source -> target. Upstream of X = what X depends on (depends_on, reads, consumes,
+# calls, decided_by, designed_in); downstream of X = what depends on X (affects, read_by, consumed_by, called_by, built_as).
+# The bridge's impact tool walks both directions: impact(X, direction=upstream|downstream|both).
+# Actors: people, roles, agents, customers and external systems are all actors; every hop record names them.
+hop_fields:
+  required: [id, from_actor, to_actor, trigger, carries, contract, story, project]
+  notes: "from_actor/to_actor: code, agent, person, customer or EXT- system; trigger: what starts it (user click, schedule, event, agent); carries: the data or money it moves"
+
+# Every record also carries project (required) so any view can be filtered by product/project.
+projects:
+  example:       {what: "The small example project shipped in example/ (used by the README walkthrough and the tests)", privacy: open}
+  private-notes: {what: "Example of a private project whose records only Claude may read (never other agents)", privacy: claude-only}
+  # custom projects: add here (name, what, privacy); a record may list several projects
+custom_projects: {}
+privacy_rule: "A record's privacy is the STRICTEST of its project's and its layer's (order: open < owner < consent < claude-only). Anything derived from a record (summaries, search index entries, caches, logs, exports, generated views) inherits that privacy."
+filters:            # every view and every bridge tool accepts these
+  - project         # one or several of the projects above
+  - layer           # see layers
+  - stage           # 1, 2, 3, after-3, done, not-doing
+  - status          # e.g. waiting, building, in review, merged, live
+  - repo            # e.g. example-org/app
+  - owner_kind      # codex, claude, reviewer, owner, design-agent
+  - risk            # low, medium, high, money
+  - date range      # created / changed / finished between
+
+# Every record of every kind gets a location (written by importers; required for hand-written records too):
+location:
+  required: [store, path]   # plus every record has `project` (see projects); store: repo or folder (e.g. example-org/app, example)
+  optional: [anchor, line, commit, url, figma_node, drawio_box, region]
+  rules:
+    - "code and docs: path + line or heading anchor, with the git commit it was read at"
+    - "figma: file key + node id + url; drawio: file + page + box id"
+    - "cloud resources: name and region only, never account numbers"
+    - "renames and moves are followed by git rename detection; a missing location is flagged on the nightly gaps list"
+    - "locations of claude-only records are claude-only too"
+
+# Required and optional fields per record kind. Agents fill "required" when they create a record;
+# "auto" fields are written by importers (never by hand). The check script refuses a record
+# missing a required field. Owners and customers may add fields under custom_fields.
+fields:
+  story:            # STORY-, FIX-, RM- (see record_kinds)
+    required: [id, title, stage, why, done_means, depends_on, decisions, figma, repo_paths,
+               estimate_hours_p50, estimate_hours_p90, estimate_cost_usd_p50, estimate_cost_usd_p90,
+               estimate_basis, size, lane_kind, owner_kind, risk]
+    optional: [notes, customer_journeys, tests_planned, hops, estimate_model_mix]
+    auto: [status, started_at, finished_at, actual_hours, review_rounds, findings_count,
+           prs, deployed_at, hop_status, cost_usd, cost_breakdown, estimate_error_hours, estimate_error_cost]
+    notes_estimates: |
+      estimate_cost_usd_*: what the story's runs will cost (agent hours at the rate card + model use at list price + reviews).
+      estimate_basis: the similar finished stories compared with (IDs), or size_band when there is no history.
+      cost_usd and cost_breakdown come from billing's ledger and run events (never typed); estimate_error_* = actual - estimate,
+      shown next to the story so estimate accuracy is measured.
+    values:
+      size: [xs, s, m, l, xl]                       # xs <1h, s 1-3h, m 3-8h, l 1-2d, xl >2d (split it)
+      lane_kind: [app, billing, core, contracts, design, ops]
+      owner_kind: [codex, claude, reviewer, owner, design-agent]
+      risk: [low, medium, high, money]
+  goal:
+    required: [id, name, owner_words, done_means, stories, phases, budget_usd, deadline]
+    auto: [percent_done, forecast_p50, forecast_p80, critical_path, cost_to_date_usd, cost_forecast_p50, cost_forecast_p80, budget_risk]
+  run:              # RUN- (agent runs; written by importers from run events and billing)
+    required: [id, story, agent_role]
+    auto: [estimate_cost_usd, actual_cost_usd, agent_hours, model_use_usd, list_price_usd, outcome, started_at, stopped_at]
+  decision:
+    required: [id, date, decided_by, question, answer, values, replaces, affects, source, checks_or_reason]
+    optional: [checks, not_checkable_reason]   # one of the two is required (checks_or_reason)
+    one_of: {checks_or_reason: [checks, not_checkable_reason]}   # a required name satisfied by any listed field
+    auto: [computed_affects, mismatch_with_affects, check_results, last_checked]
+    checks_syntax: |
+      A check is one line the Brain runs as a query or test, no model involved. Forms:
+        writes(<TBL pattern>) only from <repo>          # one writer per database
+        calls(<repo or pkg>) never <repo or pkg>         # dependency rule (architecture)
+        setting(<SET name>) == <value from this record>  # value in code/config
+        text(<layer or path glob>) never <regex>         # e.g. old value or retired word in docs/Figma
+        contract(<API or EVT>) field <name> <rule>        # contract shape
+        hop(<HOP id>) passes                              # hop tool contract test
+      If a decision cannot be expressed this way, write not_checkable_reason (it then goes to the weekly model review).
+  lesson:
+    required: [id, lesson, taught_by, applies_to, enforced_by]
+    auto: [times_broken, last_broken]
+  finding:
+    required: [id, severity, reviewer, where, scenario, story]
+    auto: [outcome, fixed_by, rounds_open]          # outcome: fixed | disputed | false_alarm
+  research:
+    required: [id, question, hypothesis, baseline, metric_and_bar, method, results, conclusion, limits]
+  release:
+    required: [id, contains, environment, rollback]
+    auto: [deployed_at, health]
+custom_fields: {}
+
+presets:
+  plan_view: [plan, decisions, design]
+  impact_view: [code, contracts, data, tests, settings]
+  risk_view: [audits, security, money, operations]
+  live_view: [agents, releases, infrastructure]
+
+# ---------------------------------------------------------------------------------------------------------------
+# Used by check.py (version 2). Everything below is data; change it here, not in the script.
+# ---------------------------------------------------------------------------------------------------------------
+
+# Older ID shapes that match no code above. They stay valid forever (never rename an ID something depends on, same
+# rule as migration names); NEW records use the canonical code. Each entry: pattern, layer, note (why it exists, where
+# it lives), example (must match the pattern; check.py tests it), optional kind (record kind), canonical (code new
+# items use instead), collides_with (canonical codes the pattern knowingly overlaps; an ID matching both is reported as
+# ambiguous), brief_scan: false (too generic to scan free text for, e.g. "D2").
+legacy_codes:
+  DEC_DATED:   {pattern: '^DEC-\d{8}-[A-Z0-9]+(-[A-Z0-9]+)*$', layer: decisions, kind: decision, canonical: DEC, example: DEC-20250315-PRICING,
+                note: "dated decisions: DEC-<yyyymmdd>-<label>; also the keys the decisions-log importer gives log entries (DEC-<date>-E<n>)"}
+  DEC_D:       {pattern: '^D\d+$', layer: decisions, kind: decision, canonical: DEC, example: D2, brief_scan: false,
+                note: "numbered decisions inside plan docs (D1, D2 …)"}
+  DEC_O:       {pattern: '^O\d+$', layer: decisions, kind: decision, canonical: DEC, example: O1, brief_scan: false,
+                note: "owner answers numbered inside plan docs (O1 …)"}
+  ADR:         {pattern: '^ADR-\d{4}$', layer: decisions, kind: decision, canonical: DEC, example: ADR-0001,
+                note: "architecture decision records in repo docs/"}
+  T_OWNER:     {pattern: '^T-\d{1,3}$', layer: decisions, kind: decision, canonical: DEC, example: T-12, collides_with: [T],
+                note: "owner task numbers (T-NN) cited as decisions; they overlap tests.T, so a record with such an id is reported ambiguous"}
+  F_REGISTER:  {pattern: '^F-\d{3,4}$', layer: audits, kind: finding, canonical: FND, example: F-001,
+                note: "an older findings register (F-001 …); new findings use FND-NNNN"}
+  FND_REVIEW:  {pattern: '^FND-[a-z0-9-]+-\d+-r\d+-\d+$', layer: audits, kind: finding, canonical: FND, example: FND-app-12-r1-1,
+                note: "review findings imported from review logs (local/import_reviews.py): FND-<repo>-<pr>-r<round>-<n>; importer keys, not hand-written"}
+  HOP_ID:      {pattern: '^hop:[\w:>.-]+$', layer: audits, canonical: HOP, example: 'hop:checkout:J1:01',
+                note: "positional hop ids (one step between two actors in a user journey)"}
+  PR_REF:      {pattern: '^PR-[\w-]+#\d+$', layer: code, example: 'PR-app#12',
+                note: "pull requests, as the review importer names them (PR-<repo>#<number>)"}
+
+# Which codes make which record kind (fields: above). An ID's kind decides its required fields.
+record_kinds:
+  decision: [DEC, BDEC, PDEC, DEC_DATED, DEC_D, DEC_O, ADR, T_OWNER]
+  story:    [STORY, FIX, RM]
+  goal:     [GOAL]
+  run:      [RUN]
+  lesson:   [L, BL, FB]
+  finding:  [FND, F_REGISTER]
+  research: [R, EXP]
+  release:  [REL]
+
+# Where each kind lives. folders: a record with an ID lives in <store path>/<folder>/ (check.py records.folder is an
+# error otherwise). doc_folders: documents without an ID, relative to the repo or store root that owns them.
+# Writers: read wide, write narrow. An agent writes only the folder of the kind it produces.
+folders:
+  decision: decisions
+  story:    stories
+  goal:     goals
+  run:      runs
+  lesson:   lessons
+  finding:  findings
+  research: research
+  release:  releases
+  setting:  settings       # kinds the brain-records skill names that have no record_kinds code yet
+  incident: incidents
+doc_folders:
+  plan:      plans          # project plans, stage maps, critical paths
+  research:  research       # METHOD.md notes: problem, hypothesis, bar, results
+  design:    designs        # design notes; the design itself stays in the design tool (record holds file key + node id)
+  audit:     audits         # audit and review reports, one file per audit
+  evidence:  evidence       # metric runs, written only by local/evidence.py
+  brief:     briefs         # agent job briefs
+  log:       logs           # job and review logs
+
+# Record stores. `{brain}` = the folder holding check.py (works in CI too). Each store owns one decision code;
+# a decision code in the wrong store is an error (two stores issuing the same DEC-NNNN would collide).
+stores:
+  example: {path: '{brain}/example/records', location_store: example, decision_code: DEC}
+  brain:   {path: '{brain}/records', location_store: brain, decision_code: BDEC}
+  private: {path: '~/private-notes/records', location_store: private-notes, decision_code: PDEC, privacy: claude-only, read_values: false}
+
+# Paths that other agents (here: Codex) can read. Claude-only records and private paths/IDs never go here.
+codex_readable_paths: ['{brain}/example', '/tmp']
+lab_paths: [private-notes]          # a path containing one of these is a private (claude-only) path
+
+# `check.py fix --safe` fills a missing `project` from the first rule whose path prefix contains the record file.
+project_rules:
+  - {path: '{brain}/example', project: [example]}
+  - {path: '~/private-notes', project: [private-notes]}
+
+# Record files under these globs are written by importers, so `auto` fields there are expected.
+importer_owned_paths: ['**/records/imported/**', '**/records/runs/**']
+
+# check.py brief: agent job briefs. Briefs made from templates by scripts may have no Project/IDs/worktree header
+# yet; for those three rules only, a missing header is a warning. Private paths and private IDs are errors for every brief.
+brief_check:
+  worktree_roots: ['~/worktrees/']
+  template_briefs: ['codex-rv[0-9]*-*', 'codex-rvfix-*']
+  value_topic_min_words: 2        # a typed number is flagged when the line has this many of the value's topic words

@@ -1,0 +1,12 @@
+id: DEC-0002
+project: [example]
+date: 2025-01-20
+decided_by: owner
+question: What does the paid plan cost?
+answer: 12 USD per month, billed monthly.
+values: {paid_plan_monthly_usd: 12}
+replaces: null
+affects: [STORY-106]
+source: "pricing review 2025-01-20"
+not_checkable_reason: "price is shown in the design tool and billing settings; checked by hand"
+location: {store: example, path: records/decisions/DEC-0002.yaml}

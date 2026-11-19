@@ -1,0 +1,8 @@
+user
+TASK: Review example-org/web PR #10 (this worktree, branch feat/story-106-costs). The builder's brief: briefs/web-story-106-costs.md.
+codex
+
+tokens used
+22,050
+no findings
+exit=0

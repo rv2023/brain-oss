@@ -1,0 +1,24 @@
+# The Brain, local slice: Postgres 17 + pgvector. Bound to 127.0.0.1 only; data in a named volume (never in git).
+# Image pinned by digest (pgvector/pgvector:pg17, built 2026-06-30, PostgreSQL 17.10). Apache AGE is not in this
+# image and no pinned image with both exists, so graph traversal uses plain recursive SQL (see schema.sql).
+name: brain-local
+services:
+  db:
+    image: pgvector/pgvector:pg17@sha256:dd467f03ca5c5581222490e5217e48a262864ccb659be559f8491bbafdc97da0
+    container_name: brain-local-db
+    environment:
+      POSTGRES_USER: brain
+      POSTGRES_DB: brain
+      POSTGRES_PASSWORD: ${BRAIN_DB_PASSWORD:-brain-local}   # local-only, loopback-bound; override via env
+    ports:
+      - "127.0.0.1:55444:5432"
+    volumes:
+      - brain-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brain -d brain"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+volumes:
+  brain-pgdata:

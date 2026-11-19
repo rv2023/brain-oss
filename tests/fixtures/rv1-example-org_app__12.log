@@ -1,0 +1,11 @@
+user
+TASK: Review example-org/app PR #12 (this worktree, branch fix/fix-006-export-copy; git diff origin/main...origin/fix/fix-006-export-copy). The builder's brief: briefs/app-fix-006-export.md. Check it does exactly that, with tests.
+codex
+
+tokens used
+41,200
+[P1] src/export.py:120 — Export ignores the retention setting — set retention to 3 days and export; the file keeps rows older than 3 days. Apply the setting and test it.
+[P2] docs/settings.md:40 — The retention setting is not documented — add it to the settings table with its default.
+[P2] src/export.py:200 — Empty export writes a header-only file without a warning — say "nothing to export" instead.
+[P3] src/cleanup.py:55 — Cleanup log line has a typo in the field name.
+exit=0

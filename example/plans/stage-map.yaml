@@ -1,0 +1,46 @@
+items:
+- id: STORY-101
+  title: Sign-up and first project
+  kind: story
+  stage: '1'
+  why: A new user can sign up and create a first project.
+  decisions:
+  - T-1
+  source: plans/backlog.md
+- id: STORY-102
+  title: Project list
+  kind: story
+  stage: '1'
+  why: Users see all their projects in one list.
+  depends_on:
+  - STORY-101
+  source: plans/backlog.md
+- id: STORY-104
+  title: Home page
+  kind: story
+  stage: '1'
+  why: Home is the first page a returning user opens.
+  depends_on:
+  - STORY-102
+  decisions:
+  - DEC-0001
+  source: plans/backlog.md
+- id: STORY-106
+  title: Costs page
+  kind: story
+  stage: '1'
+  why: Shows what each project costs this month; the billing source finishes it in stage 2.
+  finishes_in: '2'
+  depends_on:
+  - STORY-102
+  decisions:
+  - DEC-0002
+  source: plans/backlog.md
+- id: FIX-006
+  title: Export keeps rows past the retention period
+  kind: fix
+  stage: '1'
+  why: Exports must follow the retention decision.
+  decisions:
+  - DEC-0001
+  source: plans/backlog.md

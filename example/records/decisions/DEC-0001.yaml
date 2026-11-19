@@ -1,0 +1,13 @@
+id: DEC-0001
+project: [example]
+date: 2025-01-12
+decided_by: owner
+question: How long are exported rows kept?
+answer: 30 days, then removed by the nightly cleanup.
+values: {export_retention_days: 30}
+replaces: null
+affects: [FIX-006, STORY-104]
+source: "planning meeting 2025-01-12"
+checks:
+  - setting(SET-export_retention_days) == 30
+location: {store: example, path: records/decisions/DEC-0001.yaml}
